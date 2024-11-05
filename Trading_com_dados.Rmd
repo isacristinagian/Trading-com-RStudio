@@ -1,0 +1,272 @@
+---
+title: "R Trading com dados"
+
+---
+Ciência de Dados
+
+```{r}
+install.packages("BatchGetSymbols")
+install.packages("quantmod")
+install.packages("GetDFPData")
+
+```
+```{r}
+library(ggplot2)
+```
+```{r}
+library(reshape2)
+library(plyr)
+library(scales)
+library(tidyselect)
+library(quantmod)
+
+```
+```{r}
+getSymbols( "ITUB4.SA", from = "2024-01-02" , to = "2024-10-02")
+weeklyReturn(ITUB4.SA)
+
+```
+```{r}
+# Adicionando addBBands: bandas de bollinger- importante indicador para avaliar a volatilidade do ativo, em conjunto com outras análises é possivel identificar tendências de alta ou de baixa#
+
+candleChart(ITUB4.SA,theme='white') 
+addBBands()
+           
+```
+#Extraindo dados ref.retornos ouro (XAU), prata (XAG) e paládio(XPD):   
+
+```{r}
+
+getMetals(c("GOLD", "silv", "xpd"), from=2024-10-02, to=Sys.Date())
+monthlyReturn(XAUUSD)
+weeklyReturn(XAGUSD)
+yearlyReturn(XPDUSD)
+```
+
+
+#Adicionado AroonOS - oscilador - resumidamente, o indicador Aroon serve para identificar uma tendência em andamento.
+
+```{r}
+chartSeries(BVSP, 
+            type = "bars", 
+            theme = "black",
+            subset = "202401/", 
+            log.scale = TRUE,
+            TA=NULL,
+            multi.col = TRUE,
+            auto.assign=FALSE,
+            name = "IBOVESPA")
+
+addBBands()
+addAroonOsc()
+```
+
+
+```{r}
+library(dplyr)
+library(lubridate)
+
+```
+#Comparando % abertura e fechamento entre dois períodos:
+```{r}
+
+getSymbols("ELET3.SA", from="2024-10-10", to=Sys.Date())
+ClCl(ELET3.SA)
+OpOp(ELET3.SA)
+
+```
+
+
+#Médias móveis simples (SMAs) e Médias móveis exponenciais (EMAs):
+```{r}
+getSymbols("PETR4.SA", from = "2023-01-02" , to = "2024-10-02")
+chartSeries(PETR4.SA)
+data(ttrc)
+addBBands(n=20, sd=2, maType = "SMA", draw = "bands", on=-1)
+
+```
+
+```{r}
+install.packages("PerformanceAnalytics")
+```
+```{r}
+library(TTR)
+```
+
+```{r}
+##Retorno diário Nasdaq
+market = "NVDA"
+StartDay = "2023-10-08"
+Sys.Date()-30
+
+valor = getSymbols(market, auto.assign =FALSE, from = StartDay, to=Sys.Date() )
+candleChart(valor)
+return = dailyReturn(valor, type = "arithmetic")
+View(return)
+addBBands(n=20, sd=2, maType = "SMA", draw = "bands", on=-1)
+```
+
+```{r}
+summary(return)
+Op(ITUB4.SA)
+OHLCV(AAPL)
+```
+```{r}
+ 
+monthlyReturn(valor,type = "arithmetic", leanding = TRUE )
+annualReturn(valor)
+
+candleChart(monthlyReturn(valor, subset =NULL, type = "arithmetic", leanding = TRUE))
+
+```
+```{r}
+library(tidyverse)
+library(quantmod)
+getSymbols("AAPL", src = "yahoo")
+
+chartSeries(AAPL, theme = "white",up.col="forestgreen", type="line",subset='last 60 months',TA="addSMA(200,col='orange');addSMA(65,col='blue')")
+addAroonOsc()
+```
+##Comandos:
+
+las=1: deixar escala do eixo Y na vertical
+
+col=“cor”: mudar cor das barras (Ex. “red”,“blue”,“green” ou gray.colors(quantidade de tonalidades) para escala cinza ou rainbow(quantidade de cores) para escala colorida. Também é possível específicar a cor de cada barra (col=c(“red”,“green”,“yellow”,“gray”,“blue”))).
+
+xlab e ylab: nomear eixo X e Y
+
+xlim e ylim: escala do eixo X e Y
+
+main: Título
+
+abline(h=0): linha na horizontal em Y=0 (No caso de vertical, abline(v=0)). É possível alterar a cor pela função “col=”cor“” e o tracejado pelo “lty=número”
+
+```{r}
+
+histograma =hist(valor$NVDA.Adjusted, 
+        las=1,
+        col=c("pink","lightyellow","lightblue","tomato","green", "darkblue", "purple","brown", "orange","gold"), 
+        ylab="Frequência",
+        xlab="Indice Nasdaq",
+        ylim=c(0,58),
+        main="Histograma")
+abline(h=0)
+xfit<-seq(min(valor$NVDA.Adjusted),max(valor$NVDA.Adjusted))
+## dnorm (Função para encontrar os possíveis valores para Y e suas densidade de probabilidade)
+yfit<-dnorm(xfit,mean=mean(valor$NVDA.Adjusted),sd=sd(valor$NVDA.Adjusted))
+
+## diff é o comando para diferença e length para comprimento
+yfit <- yfit*diff(histograma$mids[1:2])*length(valor$NVDA.Adjusted)
+
+## Plotando linha da curva normal
+lines(xfit, yfit, col="blue", lwd=2)
+
+```
+```{r}
+library(tidyselect)
+
+StartDay = "2024-01-02"
+tesla_df <- getSymbols('TSLA', src='yahoo', auto.assign=FALSE, from = StartDay)
+candleChart(tesla_df, subset = NULL, type = "candlesticks")
+addAroonOsc()
+addMACD()
+```
+
+```{r}
+ 
+  ggplot()+
+  geom_col(data = Dividendos_pagos, aes(x = `Preço+fech`, y =`Yeld(%)` , fill = Ticker), width = 1.0, position="stack")+
+           labs(title="Preço de Fechamento X %Yeld",x="Preço(%)", y="Dividendos (%)", size=.5)+
+  theme_bw()+
+  theme_classic()+
+            
+  scale_color_manual(values = c("grey", "orange", "purple", "forestgreen", "gold","lightblue", "aquamarine", "yellow", "darkblue", "aliceblue", "pink",   "salmon", "dodgerblue"))
+ 
+           
+```
+```{r}
+ggplot(data = Dividendos_pagos, aes(x=Ticker, y=`dividendos_pagos (R$)`, fill = `Yeld(%)`, alpha = `ROE(%)`, label=`Upside(%)`)) +
+  geom_bar(stat = "identity", width = 0.75, color="forestgreen") +
+  geom_label(size = 0.5, color="tomato")+
+  
+  ggtitle("Dividendos Pagos em Out-24", "width = .25") 
+  
+```
+```{r}
+library(quantmod)
+library(tidyselect)
+getSymbols("PETR4.SA", src="yahoo", from = "2024-09-15", to = Sys.Date())
+candleChart(PETR4.SA, TA=NULL)
+
+```
+```{r}
+
+install.packages("RcppRoll")
+
+
+```
+```{r}
+install.packages("showtext")
+```
+
+
+```{r}
+library(ggplot2)
+library(showtext)
+```
+
+#mudando a fonte do gráfico
+```{r}
+font_add_google("Special Elite", family = "special")
+showtext_auto()
+```
+#Médias Móveis e preços ajustados para dois tickers:
+```{r}
+
+getSymbols(c("GEPA.SA", "ITUB4.SA"), from = "2024-01.01", to = Sys.Date())
+
+colnames(prices_tickers) = c("data", "GEPA", "Itau")
+
+rollmean(prices_tickers$Itau, k=30, n = 10)
+
+prices_tickers$media_movel_GEPA = rollmeanr(prices_tickers$GEPA, k=30, n=10)
+prices_tickers$media_movel_Itau = rollmeanr(prices_tickers$Itau, k=30, n=10)
+
+ggplot(prices_tickers, aes(x=data))+
+  labs(title = "Médias Móveis e Prices Adjusted", subtitle="Paranapanema Energia e Itau", 
+       y = "R$", 
+       x = "Período")+
+  geom_line(aes(y= GEPA, colour = "GEPA"))+
+  geom_line(aes(y= prices_tickers$media_movel_GEPA, colour = "Média Móvel GEPA"))+
+  geom_line(aes(y= Itau, colour = "Itau"))+
+  geom_line(aes(y= prices_tickers$media_movel_Itau, colour = "Média Móvel Itau"))+
+  theme_bw()+
+  theme(text=element_text(size=14, family="special", face = "bold", color="purple"),
+        plot.margin = margin(t=15, r=8, b=7, l=7),
+        panel.grid = element_blank())
+
+```
+# Visualizei e Deletei NA:
+```{r}
+
+colSums(is.na(prices_tickers))
+prices_tickers<-na.omit(prices_tickers)
+
+
+```
+```{r}
+
+colSums(is.na(prices_tickers))
+```
+```{r}
+library(quantmod)
+library(tidyverse)
+
+df_BTC =getSymbols("BTC", src = "yahoo", from="2024-01-02", to=Sys.Date(), auto.assign = FALSE)
+
+chartSeries(df_BTC, name = "BTC Prices")
+addWPR()
+
+            
+```
+
